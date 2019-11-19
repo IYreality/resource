@@ -1,7 +1,3 @@
-@[TOC](概览)
-
-这描述了组成博客网站MyBlog REST API v3的资源。如果您有任何问题或请求，请联系MyBlog支持。
-
 # 当前版本
 
 默认情况下，所有到https://api.myblog.com的请求都会收到REST API的v3版本。我们建议您通过Accept 显式地请求这个版本。
@@ -10,7 +6,20 @@
 Accept: application/vnd.myblog.v3+json
 ```
 
+## 版本历史
 
+| 日期       | 版本号 | 作者  | 备注       |
+| ---------- | ------ | ----- | ---------- |
+| 2019.11.17 | 1.0    | Ailsa | 新版本发布 |
+| 2019.11.18 | 1.1    | Ailsa | 新版本发布 |
+
+# 文档介绍
+
+本文档的接口遵循RESTful设计风格。
+
+## 登录认证流程
+
+基于JWT认证机制，实现登录认证流程。
 
 # 模式
 
@@ -42,7 +51,38 @@ X-Content-Type-Options: nosniff
 YYYY-MM-DDTHH: MM: SSZ
 ```
 
-== bug:有关时间戳中的时区的更多信息，请参见本节。==
+接口返回一共有三种情况：
+
+1. 操作成功后返回，范例：
+
+```json
+{
+  "code": "200",
+  "msg": "SUCCESS"
+} 
+```
+
+1. 成功返回数据，范例：
+
+```json
+{
+  "data": {
+    "name": "minhow",
+    "age": "18"
+  },
+  "code": "200",
+  "msg": "SUCCESS"
+}
+```
+
+1. 错误返回，范例：
+
+```json
+{
+  "err_code": "1001",
+  "err_msg": "wrong,again！"
+}
+```
 
 ## 总结陈述
 
@@ -64,8 +104,6 @@ GET / orgs / octokit / repos
 GET /repos/octokit/octokit.rb
 ```
 
-该文档提供了每种API方法的示例响应。 示例响应说明了该方法返回的所有属性。
-
 # 身份验证
 
 有两种方法可以通过myblog API v3进行身份验证。 在某些地方，需要身份验证的请求将返回<kbd>404 Not Found</kbd>，而不是<kbd>403 Forbidden </kbd>。 这是为了防止私有存储库意外泄露给未经授权的用户。
@@ -76,31 +114,64 @@ GET /repos/octokit/octokit.rb
 curl -u "username" https://api.myblog.com
 ```
 
-## OAuth2  token（在头部中发送）
+## Token 验证
 
+`Token`访问有效期为两个小时，刷新有效期为两周。
+
+## 刷新Token值
+
+## 请求说明
+
+请求方式：PATCH
+返回结果：
+
+```json
+{
+  "data": {
+    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vdm95YWdlLmRldi9hdXRob3JpemF0aW9ucy9yZWZyZXNoLXRva2VucyIsImlhdCI6MTQ4OTk4Nzg0OCwiZXhwIjoxNDg5OTg3OTc3LCJuYmYiOjE0ODk5ODc5MTcsImp0aSI6IlRvNmxzamhwTTNpcmhRQlAiLCJ1dWlkIjoiNWZlYzI0NzAifQ.hgZsQq5rT5VXAwUilEv5P1JIhLrctJPKAkKWBSqwu3c"
+  },
+  "code": "200",
+  "msg": "SUCCESS"
+}
 ```
-curl -H "Authorization: token OAUTH-TOKEN" https://api.myblog.com
+
+### 返回参数
+
+| 字段  | 字段类型 | 字段说明 |
+| ----- | -------- | -------- |
+| token | string   | token值  |
+
+# 登录
+
+## 请求说明
+
+请求方式：POST
+
+请求URL:    login
+
+请求参数：
+
+| 字段     | 字段类型 | 字段说明 |
+| -------- | -------- | -------- |
+| email    | string   | 邮箱     |
+| username | string   | 账户     |
+| password | string   | 密码     |
+
+返回结果：
+
+```json
+{
+  "data": {
+    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vc2FsZS1hcGkuZGV2L2xvZ2luIiwiaWF0IjoxNDkxNTMyOTI4LCJleHAiOjE0OTIyNTI5MjgsIm5iZiI6MTQ5MTUzMjkyOCwianRpIjoiN1hCUXdwN1FHZmxUdHVVQiIsInV1aWQiOiI1MDZjYWY3MCJ9.FyyXagHtBfDBtMJZPV_hm2q6CVULpY63JPDGDHXc"
+  },
+  "code": "200",
+  "msg": "SUCCESS"
+}
 ```
-
-> 注意：myblog建议使用Authorization标头发送OAuth令牌。
-
-进一步了解OAuth2。 请注意，可以使用生产应用程序的Web应用程序流来获取OAuth2令牌。
-
-## OAuth2密钥/秘密
-
-> 弃用通知：myblog将使用查询参数终止对API的身份验证。 对API的身份验证应使用HTTP基本身份验证完成。
-
-```
-curl 'https://api.myblog.com/users/whatever?client_id=xxxx&client_secret=yyyy'
-```
-
-使用<kbd>client_id</kbd>和<kbd>client_secret</kbd>不会以用户身份进行身份验证，它只会标识您的OAuth应用程序以增加速率限制。 权限仅授予用户，而不授予应用程序，并且您将仅取回未经身份验证的用户将看到的数据。 因此，您仅应在服务器到服务器方案中使用OAuth2密钥/秘密。 请勿将OAuth应用程序的客户端机密泄露给用户。
-
-== 阅读更多有关未经身份验证的速率限制的信息。==
 
 ## 登录限制失败
 
-使用无效凭据进行身份验证将返回401未经授权：
+使用无效凭据进行身份验证将返回<kbd>401</kbd>>未经授权：
 
 ```
 curl -i https://api.myblog.com -u foo:bar
@@ -109,7 +180,6 @@ HTTP/1.1 401 Unauthorized
   "message": "Bad credentials",
   "documentation_url": "https://developer.myblog.com/v3"
 }
-
 ```
 
 在短时间内检测到多个具有无效凭据的请求后，API会暂时拒绝该用户的所有身份验证尝试（包括具有有效凭据的请求），并设置<kbd>403</kbd>禁止：
@@ -121,7 +191,6 @@ HTTP/1.1 403 Forbidden
   "message": "Maximum number of login attempts exceeded. Please try again later.",
   "documentation_url": "https://developer.myblog.com/v3"
 }
-
 ```
 
 # 参数
@@ -130,7 +199,6 @@ HTTP/1.1 403 Forbidden
 
 ```
 curl -i "https://api.myblog.com/repos/vmg/redcarpet/issues?state=closed"
-
 ```
 
 在本例中，为路径中的:owner和:repo参数提供了'vmg'和'redcarpet'值，而:state则在查询字符串中传递。
@@ -139,23 +207,7 @@ curl -i "https://api.myblog.com/repos/vmg/redcarpet/issues?state=closed"
 
 ```
 curl -i -u username -d '{"scopes":["public_repo"]}' https://api.myblog.com/authorizations
-
 ```
-
-# 根断点
-
-您可以向根端点发出GET请求，以获得REST API v3支持的所有端点类别:
-
-```
-curl https://api.myblog.com
-
-```
-
-
-
-# GraphQL全局节点id
-
-有关如何通过REST API v3查找node_ids并在GraphQL操作中使用它们的详细信息，请参阅“使用全局节点id”指南。
 
 # 客户端错误
 
@@ -163,27 +215,25 @@ curl https://api.myblog.com
 
 1. 发送无效的JSON将导致<kbd>400 Bad Request</kbd>>响应。```
 
-   ```
+   ```json
    HTTP/1.1 400 Bad Request
    Content-Length: 35
    
    {"message":"Problems parsing JSON"}
-   
    ```
 
 2. 发送错误类型的JSON值将导致<kbd>400 Bad Request</kbd>响应。```
 
-   ```
+   ```json
    HTTP/1.1 400 Bad Request
    Content-Length: 40
    
    {"message":"Body should be a JSON object"}
-   
    ```
 
 3. Sending invalid fields will result in a<kbd>422 Unprocessable Entity</kbd> response.```
 
-   ```
+   ```json
    HTTP/1.1 422 Unprocessable Entity
    Content-Length: 149
    
@@ -197,7 +247,6 @@ curl https://api.myblog.com
        }
      ]
    }
-   
    ```
 
 所有的错误对象都有资源和字段属性，这样您的客户端就可以知道问题是什么。还有一个错误代码让您知道字段出了什么问题。以下是可能的验证错误代码:
@@ -239,7 +288,7 @@ API v3在适当的地方使用HTTP重定向。客户端应该假设任何请求�
 
 然后你可以使用uri_template gem扩展这些模板:
 
-```
+```json
 >> tmpl = URITemplate.new('/notifications{?since,all,participating}')
 >> tmpl.expand
 => "/notifications"
@@ -249,7 +298,6 @@ API v3在适当的地方使用HTTP重定向。客户端应该假设任何请求�
 
 >> tmpl.expand :all => 1, :participating => 1
 => "/notifications?all=1&participating=1"
-
 ```
 
 # 分页
@@ -258,7 +306,6 @@ API v3在适当的地方使用HTTP重定向。客户端应该假设任何请求�
 
 ```
 curl 'https://api.myblog.com/user/repos?page=2&per_page=100'
-
 ```
 
 请注意，页面编号是基于1的，删除?page参数将返回第一个页面。
@@ -274,7 +321,6 @@ curl 'https://api.myblog.com/user/repos?page=2&per_page=100'
 ```
 Link: <https://api.myblog.com/user/repos?page=3&per_page=100>; rel="next",
   <https://api.myblog.com/user/repos?page=50&per_page=100>; rel="last"
-
 ```
 
 该示例包含一个换行符，以提高可读性。
@@ -300,7 +346,7 @@ Link: <https://api.myblog.com/user/repos?page=3&per_page=100>; rel="next",
 
 任何API请求返回的HTTP头信息都会显示你当前的速率限制状态:
 
-```
+```json
 curl -i https://api.myblog.com/users/octocat
 HTTP/1.1 200 OK
 Date: Mon, 01 Jul 2013 17:27:06 GMT
@@ -308,7 +354,6 @@ Status: 200 OK
 X-RateLimit-Limit: 60
 X-RateLimit-Remaining: 56
 X-RateLimit-Reset: 1372700873
-
 ```
 
 | 头部名称              | 描述                                          |
@@ -322,12 +367,11 @@ X-RateLimit-Reset: 1372700873
 ```
 new Date(1372700873 * 1000)
 // => Mon Jul 01 2013 13:47:53 GMT-0400 (EDT)
-
 ```
 
 如果超过速率限制，则返回错误响应:
 
-```
+```json
 HTTP/1.1 403 Forbidden
 Date: Tue, 20 Aug 2013 14:50:41 GMT
 Status: 403 Forbidden
@@ -338,16 +382,15 @@ X-RateLimit-Reset: 1377013266
    "message": "API rate limit exceeded for xxx.xxx.xxx.xxx. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)",
    "documentation_url": "https://developer.myblog.com/v3/#rate-limiting"
 }
-
 ```
 
 您可以检查您的速率限制状态，而不会导致API命中。
 
-## 为OAuth应用程序提高未经身份验证的速率限制
+## 速率限制
 
 如果您的OAuth应用程序需要使用更高的速率限制进行未经身份验证的调用，您可以将应用程序的客户端ID和secret作为查询字符串的一部分传递。
 
-```
+```json
 curl -i 'https://api.myblog.com/users/whatever?client_id=xxxx&client_secret=yyyy'
 HTTP/1.1 200 OK
 Date: Mon, 01 Jul 2013 17:27:06 GMT
@@ -355,12 +398,9 @@ Status: 200 OK
 X-RateLimit-Limit: 5000
 X-RateLimit-Remaining: 4966
 X-RateLimit-Reset: 1372700873
-
 ```
 
 > 注意:永远不要与任何人共享您的客户端机密，也不要将它包含在客户端浏览器代码中。仅对服务器到服务器的调用使用这里显示的方法。
-
-## 保持在价格限制之内
 
 如果使用基本身份验证或OAuth超过了速率限制，则可以通过缓存API响应和使用条件请求来修复此问题。
 
@@ -372,7 +412,7 @@ X-RateLimit-Reset: 1372700873
 
 如果你的应用程序触发了这个速率限制，你将收到一个有用的响应:
 
-```
+```json
 HTTP/1.1 403 Forbidden
 Content-Type: application/json; charset=utf-8
 Connection: close
@@ -380,7 +420,6 @@ Connection: close
   "message": "You have triggered an abuse detection mechanism and have been temporarily blocked from content creation. Please retry your request again later.",
   "documentation_url": "https://developer.myblog.com/v3/#abuse-rate-limits"
 }
-
 ```
 
 
@@ -393,12 +432,11 @@ Connection: close
 
 ```
 User-Agent: Awesome-Octocat-App
-
 ```
 
 默认情况下，cURL发送一个有效的用户-代理头文件。如果你通过cURL(或另一个客户端)提供了一个无效的用户代理报头，你将收到一个403禁止响应:
 
-```
+```json
 curl -iH 'User-Agent: ' https://api.myblog.com/meta
 HTTP/1.0 403 Forbidden
 Connection: close
@@ -406,7 +444,6 @@ Content-Type: text/html
 Request forbidden by administrative rules.
 Please make sure your request has a User-Agent header.
 Check https://developer.myblog.com for other possible causes.
-
 ```
 
 # 有条件的请求
@@ -445,7 +482,6 @@ Vary: Accept, Authorization, Cookie
 X-RateLimit-Limit: 5000
 X-RateLimit-Remaining: 4996
 X-RateLimit-Reset: 1372700873
-
 ```
 
 
@@ -461,7 +497,6 @@ curl -i https://api.myblog.com -H "Origin: http://example.com"
 HTTP/1.1 302 Found
 Access-Control-Allow-Origin: *
 Access-Control-Expose-Headers: ETag, Link, X-myblog-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval
-
 ```
 
 CORS请求:
@@ -474,7 +509,6 @@ Access-Control-Allow-Headers: Authorization, Content-Type, If-Match, If-Modified
 Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE
 Access-Control-Expose-Headers: ETag, Link, X-myblog-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval
 Access-Control-Max-Age: 86400
-
 ```
 
 # JSON-P回调
@@ -497,7 +531,6 @@ curl https://api.myblog.com?callback=foo
     // the data
   }
 })
-
 ```
 
 您可以编写一个JavaScript处理程序来处理回调。这里有一个最小的例子，你可以尝试:
@@ -524,7 +557,6 @@ document.getElementsByTagName('head')[0].appendChild(script);
   <p>Open up your browser's console.</p>
 </body>
 </html>
-
 ```
 
 所有报头都是与HTTP报头相同的字符串值，但有一个明显的例外:Link。链接头是预先为您解析的，并通过一个[url，选项]元组数组。
@@ -533,7 +565,6 @@ document.getElementsByTagName('head')[0].appendChild(script);
 
 ```
 Link: <url1>; rel="next", <url2>; rel="foo"; bar="baz"
-
 ```
 
 ...回调输出如下:
@@ -556,10 +587,7 @@ Link: <url1>; rel="next", <url2>; rel="foo"; bar="baz"
     ]
   ]
 }
-
 ```
-
-
 
 # 时区
 
@@ -582,7 +610,6 @@ Link: <url1>; rel="next", <url2>; rel="foo"; bar="baz"
 
 ```json
 curl -H "Time-Zone: Europe/Amsterdam" -X POST https://api.myblog.com/repos/myblog/linguist/contents/new_file.md
-
 ```
 
 这意味着，当您的API调用在这个头定义的时区中进行时，我们将生成一个时间戳。例如，Contents API为每个添加或更改生成一个git提交，并使用当前时间作为时间戳。此标头将确定用于生成当前时间戳的时区。
@@ -704,7 +731,6 @@ curl -H "Time-Zone: Europe/Amsterdam" -X POST https://api.myblog.com/repos/myblo
 { 
     "job_id": "70a599e0-31e7-49b7-b260-868f441e862b", 
 } 
-
 ```
 
 **异常响应：**
@@ -713,7 +739,6 @@ curl -H "Time-Zone: Europe/Amsterdam" -X POST https://api.myblog.com/repos/myblo
 { 
     "error": {"message": "", "code": XXX}
 } 
-
 ```
 
 ## 批量接口
